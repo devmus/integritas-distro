@@ -1,7 +1,206 @@
+########################
+# Core Application
+########################
 services:
   search-api:
     image: localhost:5000/search-api:latest
+    networks:
+      - integritas-network
     ports:
       - "9998:9998"
     env_file:
       - ./search-api.env
+
+  ################################################################################
+  # Minima MySQL MEG..                                                           #
+  #                                                                              #
+  # Full Minima node backed by a MySQL database with MEG..                       #
+  ################################################################################
+
+  #MySQL Database to store all Minima Data.. all TxPoW etc..
+  mysql:
+    image: mysql:8.4
+    networks:
+      - integritas-network
+    environment:
+      #You can change the root password
+      MYSQL_ROOT_PASSWORD: "rootpassword"
+      #You can leave these.. ONLY change these if you ALSO change the login details below
+      MYSQL_USER: "minimauser"
+      MYSQL_PASSWORD: "minimapassword"
+      MYSQL_DATABASE: "minimadb"
+    restart: unless-stopped
+    #You can access the MySQL db if you want by opening the port
+    ports:
+      - 3310:3306
+
+  #Minima Node
+  minima:
+    image: minimaglobal/minima:dev
+    networks:
+      - integritas-network
+    stop_grace_period: 60s
+    restart: unless-stopped
+    environment:
+      #Main MDS password
+      minima_mdspassword: "123"
+
+      #Initial PEERS - you can edit this or use the default
+      minima_p2pnodes: "https://spartacusrex.com/minimapeers.txt"
+
+      #If you are running on Desktop / no external IP enable this setting
+      #minima_desktop: true
+      #You must have rpc enabled so MEG can communicate - do NOT open port 9005
+      minima_rpcenable: "true"
+      #Enable the Public MDS
+      minima_publicmds: "true"
+      #I use solo to test / debug
+      #minima_solo: "true"
+      #MDS is ENABLED by default in the container so you MUST set your MDS password to something good..
+      minima_megammr: "true"
+      minima_megaprune: "true"
+      #MySQL login profiles:
+      minima_mysqldb: "minimauser:minimapassword@mysql:3306/minimadb"
+      minima_mysqldbdelay: "10000"
+      minima_mysqlalltxpow: "true"
+    #Opening the Minima ports.. You can change these if you are running multiple version on the same host
+    ports:
+      #Main Minima port - you can remove this if you don't have an external IP
+      - 9001:9001
+      #MDS port..
+      - 9003:9003
+    #The main Minima data folder where you can load mysql archive files
+    volumes:
+      - ./data:/home/minima/data
+      - ./backups:/home/minima/backups
+    depends_on:
+      - mysql
+
+  #The MEG node.. waits for Minima to start
+  meg:
+    image: minimaglobal/meg:dev
+    networks:
+      - integritas-network
+    stop_grace_period: 60s
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    environment:
+      #The MAIN admin password - CHANGE this
+      meg_adminpassword: "mypassword"
+
+      #Do NOT change these..
+      meg_minimarpc: "http://minima:9005/"
+      meg_meghost: "http://meg:8080"
+
+      #NEED this as minima waits for mysql
+      meg_startupdelay: "20000"
+    depends_on:
+      - minima
+
+  ########################
+  # Minima explorer
+  ########################
+
+  explorer_typesense:
+    image: typesense/typesense:28.0
+    networks:
+      - integritas-network
+    ports:
+      - "${TYPESENSE_PORT}:8108"
+    volumes:
+      - ./typesense-data:/data
+    env_file:
+      - ./explorer.env
+    environment:
+      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY}
+      - TYPESENSE_DATA_DIR=/data
+    restart: unless-stopped
+
+  explorer_mysql:
+    image: mysql:8.0
+    networks:
+      - integritas-network
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    env_file:
+      - ./explorer.env
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_EXPLORER_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_EXPLORER_DATABASE}
+      - MYSQL_USER=${DB_EXPLORER_USER}
+      - MYSQL_PASSWORD=${DB_EXPLORER_PASSWORD}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping"]
+      interval: 10s
+      timeout: 2s
+      retries: 10
+
+  init-script:
+    image: node:18
+    networks:
+      - integritas-network
+    volumes:
+      - ./startup_scripts:/app/startup_scripts
+      - ./package.json:/app/package.json
+    env_file:
+      - ./explorer.env
+    working_dir: /app
+    environment:
+      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY}
+      - TYPESENSE_HOST=explorer_typesense
+      - TYPESENSE_PORT=8108
+      - TYPESENSE_TXPOW_COLLECTION_NAME=${TYPESENSE_TXPOW_COLLECTION_NAME}
+      - DB_EXPLORER_HOST=explorer_mysql
+      - DB_EXPLORER_PORT=3306
+      - DB_EXPLORER_USER=root
+      - DB_EXPLORER_PASSWORD=${DB_EXPLORER_ROOT_PASSWORD}
+      - DB_EXPLORER_DATABASE=${DB_EXPLORER_DATABASE}
+    depends_on:
+      explorer_mysql:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for services to be ready...' &&
+        sleep 10 &&
+        npm install &&
+        node startup_scripts/001_create_txpow_collection.js &&
+        node startup_scripts/002_create_key_value_collection.js &&
+        node startup_scripts/003_create_explorer_db.js
+      "
+
+  minima-explorer-lite:
+    image: dynamitesushi/minima-explorer-lite:latest
+    networks:
+      - integritas-network
+    env_file:
+      - ./explorer.env
+    ports:
+      - "${EXPLORER_WEB_API_PORT}:3000"
+    depends_on:
+      init-script:
+        condition: service_completed_successfully
+    environment:
+      - MINIMA_HOSTS=${MINIMA_HOSTS}
+      - DB_MINIMA_HOST=${DB_MINIMA_HOST}
+      - DB_MINIMA_PORT=${DB_MINIMA_PORT}
+      - DB_MINIMA_USER=${DB_MINIMA_USER}
+      - DB_MINIMA_PASSWORD=${DB_MINIMA_PASSWORD}
+      - DB_MINIMA_DATABASE=${DB_MINIMA_DATABASE}
+      - DB_EXPLORER_HOST=explorer_mysql
+      - DB_EXPLORER_PORT=3306
+      - DB_EXPLORER_USER=${DB_EXPLORER_USER}
+      - DB_EXPLORER_PASSWORD=${DB_EXPLORER_PASSWORD}
+      - DB_EXPLORER_DATABASE=${DB_EXPLORER_DATABASE}
+      - TYPESENSE_HOST=explorer_typesense
+      - TYPESENSE_PORT=8108
+      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY}
+      - TYPESENSE_TXPOW_COLLECTION_NAME=${TYPESENSE_TXPOW_COLLECTION_NAME}
+    restart: unless-stopped
+
+networks:
+  integritas-network:
+    external: true

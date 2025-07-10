@@ -1,0 +1,7 @@
+services:
+  search-api:
+    image: localhost:5000/search-api:latest
+    ports:
+      - "9998:9998"
+    env_file:
+      - ./search-api.env

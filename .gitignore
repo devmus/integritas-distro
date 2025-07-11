@@ -1,6 +1,9 @@
 /node_modules
-/mysql-data
-/typesense-data
+explorer/typesense-data
+explorer/mysql-data
+minima-meg/backups
+minima-meg/data
+minima-meg/mysql-data
 .git
 .env
 *.env

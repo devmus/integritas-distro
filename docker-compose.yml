@@ -9,7 +9,7 @@ services:
     ports:
       - "9998:9998"
     env_file:
-      - ./search-api.env
+      - ./search-api/.env
 
   ################################################################################
   # Minima MySQL MEG..                                                           #
@@ -22,6 +22,8 @@ services:
     image: mysql:8.4
     networks:
       - integritas-network
+    volumes:
+      - ./minima-meg/mysql-data:/var/lib/mysql
     environment:
       #You can change the root password
       MYSQL_ROOT_PASSWORD: "rootpassword"
@@ -63,16 +65,19 @@ services:
       minima_mysqldb: "minimauser:minimapassword@mysql:3306/minimadb"
       minima_mysqldbdelay: "10000"
       minima_mysqlalltxpow: "true"
+      minima_mysqldbcoins: "true"
+      minima_rpccrlf: "true"
     #Opening the Minima ports.. You can change these if you are running multiple version on the same host
     ports:
       #Main Minima port - you can remove this if you don't have an external IP
       - 9001:9001
       #MDS port..
       - 9003:9003
+      - 9005:9005
     #The main Minima data folder where you can load mysql archive files
     volumes:
-      - ./data:/home/minima/data
-      - ./backups:/home/minima/backups
+      - ./minima-meg/data:/home/minima/data
+      - ./minima-meg/backups:/home/minima/backups
     depends_on:
       - mysql
 
@@ -109,9 +114,7 @@ services:
     ports:
       - "${TYPESENSE_PORT}:8108"
     volumes:
-      - ./typesense-data:/data
-    env_file:
-      - ./explorer.env
+      - ./explorer/typesense-data:/data
     environment:
       - TYPESENSE_API_KEY=${TYPESENSE_API_KEY}
       - TYPESENSE_DATA_DIR=/data
@@ -122,11 +125,9 @@ services:
     networks:
       - integritas-network
     ports:
-      - "${MYSQL_PORT}:3306"
+      - "${MYSQL_EXPLORER_PORT}:3306"
     volumes:
-      - ./mysql-data:/var/lib/mysql
-    env_file:
-      - ./explorer.env
+      - ./explorer/mysql-data:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=${DB_EXPLORER_ROOT_PASSWORD}
       - MYSQL_DATABASE=${DB_EXPLORER_DATABASE}
@@ -144,10 +145,8 @@ services:
     networks:
       - integritas-network
     volumes:
-      - ./startup_scripts:/app/startup_scripts
-      - ./package.json:/app/package.json
-    env_file:
-      - ./explorer.env
+      - ./explorer/startup_scripts:/app/startup_scripts
+      - ./explorer/package.json:/app/package.json
     working_dir: /app
     environment:
       - TYPESENSE_API_KEY=${TYPESENSE_API_KEY}
@@ -176,8 +175,6 @@ services:
     image: dynamitesushi/minima-explorer-lite:latest
     networks:
       - integritas-network
-    env_file:
-      - ./explorer.env
     ports:
       - "${EXPLORER_WEB_API_PORT}:3000"
     depends_on:

@@ -1,0 +1,46 @@
+{
+  "name": "transaction-syncer",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "docker:local:build": "docker build -t minima-explorer-lite:latest .",
+    "docker:build": "docker buildx build --platform linux/amd64,linux/arm64 -t minima-explorer-lite:latest .",
+    "docker:tag": "docker tag minima-explorer-lite:latest dynamitesushi/minima-explorer-lite:latest",
+    "docker:push": "docker buildx build --platform linux/amd64,linux/arm64 -t dynamitesushi/minima-explorer-lite:latest --push .",
+    "docker:push:latest": "npm run docker:tag && npm run docker:push",
+    "cron:background": "pm2 start --interpreter bun ./commands/background.ts",
+    "cron:validator": "pm2 start --interpreter bun ./commands/validator.ts",
+    "docker:create:shared-network": "docker network create my-shared-network"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/sqlstring": "^2.3.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.0.14",
+    "@types/lodash": "^4.17.13",
+    "@types/node-cron": "^3.0.11",
+    "autoprefixer": "^10.4.21",
+    "axios": "^1.8.3",
+    "cors": "^2.8.5",
+    "csv-parse": "^5.6.0",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "express-handlebars": "^8.0.1",
+    "express-session": "^1.18.1",
+    "global": "^4.4.0",
+    "lodash": "^4.17.21",
+    "mysql2": "^3.11.0",
+    "node-cache": "^5.1.2",
+    "node-cron": "^3.0.3",
+    "pm2": "^5.4.2",
+    "postcss": "^8.5.3",
+    "sqlstring": "^2.3.3",
+    "tailwindcss": "^4.0.14",
+    "typesense": "^1.8.2"
+  }
+}

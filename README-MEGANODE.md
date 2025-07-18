@@ -1,3 +1,10 @@
+# Added comments:
+
+First: Had to run mysql action:update manually in node terminal
+Second: Had to run mysqlcoins action:update manually in node terminal
+
+Can / should this be automated?
+
 # meganode
 
 MySQL backed Minima node with MEG as a multi-container docker image

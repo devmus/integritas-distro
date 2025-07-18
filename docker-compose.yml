@@ -2,6 +2,65 @@
 # Core Application
 ########################
 services:
+  core-api:
+    image: localhost:5000/core-api:latest
+    networks:
+      - integritas-network
+    ports:
+      - "5005:5005"
+    env_file:
+      - ./core-api/.env
+
+  mongodb:
+    image: mongo:6.0
+    networks:
+      - integritas-network
+    restart: always
+    ports:
+      - "27017:27017" # host:container
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      CORE_USER_PASSWORD: ${CORE_USER_PASSWORD}
+    volumes:
+      - integritas-core-db:/data/db
+      - ./core-api/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+
+  mongo-express:
+    image: mongo-express
+    networks:
+      - integritas-network
+    container_name: integritas-core-mongo-express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: integritas191
+      ME_CONFIG_BASICAUTH_USERNAME: express # optional: web UI login
+      ME_CONFIG_BASICAUTH_PASSWORD: express123 # optional: web UI login
+      ME_CONFIG_MONGODB_SERVER: mongodb
+    depends_on:
+      - mongodb
+
+  minio:
+    image: minio/minio
+    networks:
+      - integritas-network
+    ports:
+      - "9900:9000"
+      - "9901:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+
+  ########################
+  # Search API
+  ########################
   search-api:
     image: localhost:5000/search-api:latest
     networks:
@@ -45,7 +104,7 @@ services:
     restart: unless-stopped
     environment:
       #Main MDS password
-      minima_mdspassword: "123"
+      #minima_mdspassword: "123"
 
       #Initial PEERS - you can edit this or use the default
       minima_p2pnodes: "https://spartacusrex.com/minimapeers.txt"
@@ -55,7 +114,8 @@ services:
       #You must have rpc enabled so MEG can communicate - do NOT open port 9005
       minima_rpcenable: "true"
       #Enable the Public MDS
-      minima_publicmds: "true"
+      #minima_publicmds: "true"
+      minima_mdsenable: "false"
       #I use solo to test / debug
       #minima_solo: "true"
       #MDS is ENABLED by default in the container so you MUST set your MDS password to something good..
@@ -197,6 +257,10 @@ services:
       - TYPESENSE_API_KEY=${TYPESENSE_API_KEY}
       - TYPESENSE_TXPOW_COLLECTION_NAME=${TYPESENSE_TXPOW_COLLECTION_NAME}
     restart: unless-stopped
+
+volumes:
+  integritas-core-db:
+  minio-data:
 
 networks:
   integritas-network:

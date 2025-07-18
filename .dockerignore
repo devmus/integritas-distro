@@ -1,0 +1,18 @@
+# Node
+node_modules
+npm-debug.log
+
+# Git
+.git
+.gitignore
+
+# OS
+.DS_Store
+
+# Docker files
+Dockerfile*
+.dockerignore
+
+# Env files
+.env
+.env.local

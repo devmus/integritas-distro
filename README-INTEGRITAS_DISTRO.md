@@ -16,6 +16,8 @@ Enter minima node terminal:
 
 - mysqlcoins action:update
 
+- getaddress (& send some Minima tokens to your node address.)
+
 Enter MinIO admin panel by going to http://{your-host-ip}:9901 in your browser.
 
 - Enter your MINIO credentials (deafault is minioadmin/minioadmin)
@@ -25,3 +27,7 @@ Enter MinIO admin panel by going to http://{your-host-ip}:9901 in your browser.
 ### Gör klart core-api
 
 ### Lägg in timestamp server
+
+# ENV values
+
+root level: .env

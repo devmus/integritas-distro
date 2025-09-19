@@ -6,6 +6,8 @@ services:
     image: localhost:5000/core-api:latest
     networks:
       - integritas-network
+    environment:
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
     ports:
       - "5005:5005"
     env_file:

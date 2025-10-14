@@ -1,33 +1,75 @@
-# Run app
+## Create and configure .env files
+
+- create .env files where there are .env.example files. (4 instances)
+
+- copy the content from .env.example to the new .env files. Change sensitive values like password.
+
+## Run app
 
 Terminal commands:
 
-- docker network create integritas-network
+(First time only)
 
-- docker compose up --pull always --build
+- `docker network create integritas-network`
 
-## First time setup tasks
+(Start command)
+
+- `docker compose up --pull always --build -d`
+
+## Additional first time setup tasks:
 
 Enter minima node terminal:
 
-- docker exec -it integritas-distro-minima-1 minima
+Node 1:
 
-- mysql action:update
+- `docker exec -it integritas-distro-minima-1 minima`
 
-- mysqlcoins action:update
+- `mysql action:update`
 
-- getaddress (& send some Minima tokens to your node address.)
+- `mysqlcoins action:update`
+
+- `getaddress` (& send some Minima tokens to your node address.)
+
+- `send address:your-own-address amount:0.1`
+
+- `send address:your-own-address amount:0.00001 split:10` (After you have received Minima tokens, split them up so you have multiple coins. Do this enough times so that you never run out of available coins)
+
+Node 2:
+
+- `docker exec -it integritas-distro-minima-ts-1 minima`
+
+- `mysql action:update`
+
+- `mysqlcoins action:update`
+
+- `getaddress` (& send some Minima tokens to your node address.)
+
+- `send address:your-own-address amount:0.1`
+
+- `send address:your-own-address amount:0.001 split:10` (After you have received Minima tokens, split them up so you have multiple coins)
 
 Enter MinIO admin panel by going to http://{your-host-ip}:9901 in your browser.
 
 - Enter your MINIO credentials (deafault is minioadmin/minioadmin)
 
-- Create a bucket and name it "uploads"
+- Create these buckets "uploads", "aiuploads", "proofs", "reports"
 
-### Gör klart core-api
+## If needed: Stop app
 
-### Lägg in timestamp server
+- docker compose down
 
-# ENV values
+# remove volumes/data ONLY if you want a fresh DB:
 
-root level: .env
+# rm -rf ./timestamp/mysql-data
+
+# rm -rf ./explorer/mysql-data
+
+# rm -rf ./explorer/typesense-data
+
+# rm -rf ./minima-meg/mysql-data
+
+# rm -rf ./minima-meg/data
+
+# rm -rf ./minima-meg/backups
+
+# rm -rf ./core-api/... (mongodb)

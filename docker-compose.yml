@@ -260,6 +260,132 @@ services:
       - TYPESENSE_TXPOW_COLLECTION_NAME=${TYPESENSE_TXPOW_COLLECTION_NAME}
     restart: unless-stopped
 
+  ########################################
+  # Timestamp Server (PHP + Nginx + Cron)
+  ########################################
+  timestamp-web:
+    image: nginx:latest
+    networks: [integritas-network]
+    ports:
+      - "3010:3010"
+    volumes:
+      - ./timestamp/nginx.conf:/etc/nginx/conf.d/nginx.conf:ro
+      - ./timestamp/app:/app:ro
+    depends_on:
+      - timestamp-php
+    restart: unless-stopped
+
+  # Dedicated Minima node for the Timestamp Server (no host ports)
+  minima-ts:
+    image: minimaglobal/minima:dev
+    networks:
+      - integritas-network
+    stop_grace_period: 60s
+    restart: unless-stopped
+    environment:
+      minima_rpcenable: "true"
+      minima_rpccrlf: "true"
+      minima_mdsenable: "false"
+      # Use the same peers list (or your own)
+      minima_p2pnodes: "https://spartacusrex.com/minimapeers.txt"
+      # Separate data directory from the other node
+      # (no MySQL integration needed for the timestamp server)
+    volumes:
+      - ./minima-ts/data:/home/minima/data
+    ports:
+      - 9999:9003
+      - 9905:9005
+
+  timestamp-php:
+    build:
+      context: ./timestamp
+      dockerfile: PHP.Dockerfile
+    networks: [integritas-network]
+    volumes:
+      - ./timestamp/app:/app:ro
+    environment:
+      TIMESTAMP_DB_HOST: ${TIMESTAMP_DB_HOST}
+      TIMESTAMP_DB_NAME: ${TIMESTAMP_DB_NAME}
+      TIMESTAMP_DB_USER: ${TIMESTAMP_DB_USER}
+      TIMESTAMP_DB_PASSWORD: ${TIMESTAMP_DB_PASSWORD}
+      MINIMA_RPC_URL: http://minima-ts:9905/
+    depends_on:
+      - timestamp-mysql
+    restart: unless-stopped
+
+  timestamp-mysql:
+    image: mysql:8.0
+    networks: [integritas-network]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${TIMESTAMP_DB_ROOT_PASSWORD}
+      MYSQL_USER: ${TIMESTAMP_DB_USER}
+      MYSQL_PASSWORD: ${TIMESTAMP_DB_PASSWORD}
+      MYSQL_DATABASE: ${TIMESTAMP_DB_NAME}
+    ports:
+      - "3311:3306" # avoids clashing with other MySQLs
+    volumes:
+      - ./timestamp/mysql-data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -p${TIMESTAMP_DB_ROOT_PASSWORD} -h 127.0.0.1 || exit 1",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  timestamp-db-seeder:
+    image: mysql:8.0
+    networks: [integritas-network]
+    volumes:
+      - ./timestamp/table.sql:/table.sql:ro
+    depends_on:
+      timestamp-mysql:
+        condition: service_healthy
+    entrypoint:
+      [
+        "bash",
+        "-c",
+        "mysql --user=root --password=$${TIMESTAMP_DB_ROOT_PASSWORD} --host=timestamp-mysql --port=3306 $${TIMESTAMP_DB_NAME} < /table.sql",
+      ]
+    environment:
+      TIMESTAMP_DB_ROOT_PASSWORD: ${TIMESTAMP_DB_ROOT_PASSWORD}
+      TIMESTAMP_DB_NAME: ${TIMESTAMP_DB_NAME}
+    restart: "no"
+
+  timestamp-cron:
+    build:
+      context: ./timestamp
+      dockerfile: CRON.Dockerfile
+    networks: [integritas-network]
+    environment:
+      TIMESTAMP_DB_HOST: ${TIMESTAMP_DB_HOST}
+      TIMESTAMP_DB_NAME: ${TIMESTAMP_DB_NAME}
+      TIMESTAMP_DB_USER: ${TIMESTAMP_DB_USER}
+      TIMESTAMP_DB_PASSWORD: ${TIMESTAMP_DB_PASSWORD}
+      MINIMA_RPC_URL: http://minima-ts:9905/
+    volumes:
+      - ./timestamp/app:/app:ro
+    entrypoint:
+      - bash
+      - -lc
+      - |
+        # export only the vars we need into /etc/environment for cron jobs
+        {
+          echo "TIMESTAMP_DB_HOST=${TIMESTAMP_DB_HOST}"
+          echo "TIMESTAMP_DB_NAME=${TIMESTAMP_DB_NAME}"
+          echo "TIMESTAMP_DB_USER=${TIMESTAMP_DB_USER}"
+          echo "TIMESTAMP_DB_PASSWORD=${TIMESTAMP_DB_PASSWORD}"
+          echo "MINIMA_RPC_URL=${MINIMA_RPC_URL}"
+        } > /etc/environment
+        cron -f -L 0
+    depends_on:
+      - timestamp-db-seeder
+      - minima
+    restart: unless-stopped
+
 volumes:
   integritas-core-db:
   minio-data:

@@ -4,6 +4,8 @@
 
 - copy the content from .env.example to the new .env files. Change sensitive values like password.
 
+---
+
 ## Run app
 
 Terminal commands:
@@ -15,6 +17,8 @@ Terminal commands:
 (Start command)
 
 - `docker compose up --pull always --build -d`
+
+---
 
 ## Additional first time setup tasks:
 
@@ -28,31 +32,31 @@ Node 1:
 
 - `mysqlcoins action:update`
 
-- `getaddress` (& send some Minima tokens to your node address.)
+- `getaddress` (copy miniaddress & send some Minima tokens to your node address.)
 
 - `send address:your-own-address amount:0.1`
 
-- `send address:your-own-address amount:0.00001 split:10` (After you have received Minima tokens, split them up so you have multiple coins. Do this enough times so that you never run out of available coins)
+- `send address:your-own-address amount:0.00001 split:10` (After you have received Minima tokens, split them up so you have multiple coins. Do this enough times so that you never run out of available coins for NFT report creation.)
 
 Node 2:
 
 - `docker exec -it integritas-distro-minima-ts-1 minima`
 
-- `mysql action:update`
-
-- `mysqlcoins action:update`
-
-- `getaddress` (& send some Minima tokens to your node address.)
+- `getaddress` (copy miniaddress & send some Minima tokens to your node address.)
 
 - `send address:your-own-address amount:0.1`
 
-- `send address:your-own-address amount:0.001 split:10` (After you have received Minima tokens, split them up so you have multiple coins)
+- `send address:your-own-address amount:0.001 split:10` (After you have received Minima tokens, split them up so you have multiple coins. 10 coins should be enough to always have available coins to use for creating timestamp transactions.)
+
+---
 
 Enter MinIO admin panel by going to http://{your-host-ip}:9901 in your browser.
 
 - Enter your MINIO credentials (deafault is minioadmin/minioadmin)
 
 - Create these buckets "uploads", "aiuploads", "proofs", "reports"
+
+---
 
 ## If needed: Stop app
 

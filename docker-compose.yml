@@ -308,7 +308,7 @@ services:
       TIMESTAMP_DB_NAME: ${TIMESTAMP_DB_NAME}
       TIMESTAMP_DB_USER: ${TIMESTAMP_DB_USER}
       TIMESTAMP_DB_PASSWORD: ${TIMESTAMP_DB_PASSWORD}
-      MINIMA_RPC_URL: http://minima-ts:9905/
+      MINIMA_RPC_URL: http://minima-ts:9005/
     depends_on:
       - timestamp-mysql
     restart: unless-stopped
@@ -365,7 +365,7 @@ services:
       TIMESTAMP_DB_NAME: ${TIMESTAMP_DB_NAME}
       TIMESTAMP_DB_USER: ${TIMESTAMP_DB_USER}
       TIMESTAMP_DB_PASSWORD: ${TIMESTAMP_DB_PASSWORD}
-      MINIMA_RPC_URL: http://minima-ts:9905/
+      MINIMA_RPC_URL: http://minima-ts:9005/
     volumes:
       - ./timestamp/app:/app:ro
     entrypoint:

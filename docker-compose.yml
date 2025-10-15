@@ -64,7 +64,7 @@ services:
   # Search API
   ########################
   search-api:
-    image: localhost:5000/search-api:latest
+    image: ghcr.io/devmus/search-api:latest
     networks:
       - integritas-network
     ports:

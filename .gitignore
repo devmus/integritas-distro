@@ -1,9 +1,11 @@
 /node_modules
 explorer/typesense-data
 explorer/mysql-data
+minima-meg/backups
+minima-meg/data
+minima-meg/mysql-data
 timestamp/mysql-data
 .git
 .env
 *.env
 /minima-ts
-/minima-meg

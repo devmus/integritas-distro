@@ -3,7 +3,7 @@
 ########################
 services:
   core-api:
-    image: localhost:5000/core-api:latest
+    image: ghcr.io/devmus/core-api:1.0.0
     networks:
       - integritas-network
     environment:

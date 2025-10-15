@@ -1,8 +1,14 @@
 ### INTEGRITAS DISTRIBUTED API
 
+## GHCR Login steps
+
+- Create a github PAT token.
+
+- Ports used: 5005
+
 ## Create and configure .env files
 
-- create .env files where there are .env.example files. (4 instances)
+- create .env files where there are .env.example files. (4 instances: @., @./core-api, @./search-api, @./timestamp)
 
 - copy the content from .env.example to the new .env files. Change sensitive values like password.
 

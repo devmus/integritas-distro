@@ -3,7 +3,7 @@
 ########################
 services:
   core-api:
-    image: ghcr.io/devmus/core-api:1.0.0
+    image: ghcr.io/devmus/core-api:1.0.2
     networks:
       - integritas-network
     environment:
@@ -64,7 +64,7 @@ services:
   # Search API
   ########################
   search-api:
-    image: ghcr.io/devmus/search-api:1.0.0
+    image: ghcr.io/devmus/search-api:1.0.1
     networks:
       - integritas-network
     ports:
